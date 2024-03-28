@@ -4,7 +4,7 @@ from imdb.items import AllocFilmsItem
 class AllocFilmsSpider(scrapy.Spider):
     name = "alloc_films"
     allowed_domains = ["www.allocine.fr"]
-    start_urls = ["https://www.allocine.fr/films/decennie-2020/"]
+    start_urls = ["https://www.allocine.fr/films/pays-5001/decennie-2020/"]
 
     #fonction doit s'occuper de parcourir la liste des produits sur chaque page et de suivre le lien de chaque produit
     #pour obtenir plus de détails.
@@ -12,6 +12,11 @@ class AllocFilmsSpider(scrapy.Spider):
         films = response.css('li.mdl')
         for film in films: #on parcours chaque film 
             titre = film.css('a.meta-title-link::text').get()
+            #infos = film.css('a.meta-body-item.meta-body-info::text').get()
+            acteurs = film.css('div.meta-body-item.meta-body-actor span::text').getall() #on prend le href a chaque film
+            genre = film.css('div.meta-body-item.meta-body-info::text').getall() #mettre la duree
+            #genre = film.css('div.meta-body-item.meta-body-info span::text').getall() genres
+            realisateur = film.css('div.meta-body-item.meta-body-direction span::text').getall()
             film_url = film.css('a.meta-title-link::attr(href)').get() #on prend le href a chaque film
             # yield {
             #     'title': titre,
@@ -19,7 +24,7 @@ class AllocFilmsSpider(scrapy.Spider):
             # }
             
             
-            yield response.follow(film_url, self.parse_product, meta = {'titre': titre})
+            yield response.follow(film_url, self.parse_product, meta = {'titre': titre, 'acteurs': acteurs, 'realisateur': realisateur,'genre': genre})
 
         current_page = response.meta.get('current_page', 1)
         next_page = current_page + 1
@@ -32,22 +37,17 @@ class AllocFilmsSpider(scrapy.Spider):
     #fonction est appelée pour parcourir chaque page de film. 
     def parse_product(self, response):
         titre = response.meta.get('titre')
+        acteurs = response.meta.get('acteurs')
+        realisateur = response.meta.get('realisateur')
+        genre = response.meta.get('genre')
         
         film_item = AllocFilmsItem()
-
+        
+        film_item['genre'] = genre
         film_item['titre'] = titre
+        film_item['acteurs'] = acteurs
+        film_item['realisateur'] = realisateur
         film_item['box_office_url'] = response.urljoin(response.css('a[title="Box Office"]::attr(href)').get())
-        # film_item['titre_original'] = response.css('h1 span.hero__primary-text::text').get()
-        # film_item['score'] = response.xpath('//div[@data-testid="hero-rating-bar__aggregate-rating__score"]//span/text()').get()
-        # film_item['genre'] = response.css('span.ipc-chip__text::text').getall()
-        # film_item['year'] = response.css('a[href*="releaseinfo"]::text').get()
-        # film_item['duree'] = response.css('.ipc-inline-list__item::text').get()
-        # film_item['description'] = response.xpath('//span[@data-testid="plot-l"]/text()').get()
-        # film_item['acteurs'] = response.xpath('//div[@data-testid="title-cast-item"]//a[@data-testid="title-cast-item__actor"]/text()').extract()
-        # film_item['langue_origine'] = response.xpath('//a[contains(@class, "ipc-metadata-list-item__list-content-item") and contains(@href, "primary_language")]/text()').get()
-        # film_item['pays'] = response.css('li[data-testid="title-details-origin"] .ipc-metadata-list-item__list-content-item--link::text').get()
-        # film_item['public'] = response.css('a[href*="certificates"]::text').get()
-        # film_item['directeur'] = response.css('li.ipc-metadata-list__item:contains("Director") a::text').get()
 
         yield film_item
         
@@ -59,9 +59,13 @@ class AllocFilmsSpider(scrapy.Spider):
         #'response.meta' pour accéder aux métadonnées transmises
         film_item = response.meta['film_item']
 
-        premiere_entree = response.css('table.box-office-table tr.responsive-table-row:first-of-type td:nth-child(2)::text').get()
-        if premiere_entree:
-            premiere_entree = premiere_entree.strip().replace('\xa0', '').replace(' ', '')
-        film_item['entrees'] = premiere_entree
-        
+        pays_box_office = response.css('h2.titlebar-title-md::text').get()
+
+        if pays_box_office == 'Box Office France':
+            premiere_entree = response.css('table.box-office-table tr.responsive-table-row:first-of-type td:nth-child(2)::text').get()
+            if premiere_entree:
+                premiere_entree = premiere_entree.strip().replace('\xa0', '').replace(' ', '')
+                film_item['entrees'] = premiere_entree
+        else:
+            film_item['entrees'] = None
         yield film_item

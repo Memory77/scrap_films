@@ -8,7 +8,6 @@
 from itemadapter import ItemAdapter
 import re
 import sqlite3
-import psycopg2
 import logging
 
 
