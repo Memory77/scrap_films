@@ -23,8 +23,9 @@ class FilmsItem(scrapy.Item):
 
 class AllocFilmsItem(scrapy.Item):
     # define the fields for your item here like:
-    genre = scrapy.Field()
     titre = scrapy.Field()
+    duree = scrapy.Field()
+    genre = scrapy.Field()
     box_office_url = scrapy.Field()
     entrees = scrapy.Field()
     acteurs = scrapy.Field()

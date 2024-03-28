@@ -64,8 +64,7 @@ DOWNLOADER_MIDDLEWARES = {
 # Configure item pipelines
 # See https://docs.scrapy.org/en/latest/topics/item-pipeline.html
 ITEM_PIPELINES = {
-   "imdb.pipelines.ImdbSqlitePipeline": 300,
-   "imdb.pipelines.ImdbPostgresPipeline": 300
+   "imdb.pipelines.AllocFilmPipeline": 300,
 }
 
 # Enable and configure the AutoThrottle extension (disabled by default)
@@ -93,3 +92,4 @@ ITEM_PIPELINES = {
 REQUEST_FINGERPRINTER_IMPLEMENTATION = "2.7"
 TWISTED_REACTOR = "twisted.internet.asyncioreactor.AsyncioSelectorReactor"
 FEED_EXPORT_ENCODING = "utf-8"
+DOWNLOAD_FAIL_ON_DATALOSS = False
