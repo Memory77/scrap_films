@@ -29,7 +29,21 @@ class AllocFilmPipeline:
         if adapter.get('genre'):
             adapter['genre'] = adapter['genre'][3:] if len(adapter['genre']) >= 3 else adapter['genre']
 
-       
+        
+        # field 'pays'
+        if 'pays' in adapter:
+            adapter['pays'] = adapter['pays'].strip()
+
+        # field 'anecdotes'
+        if 'anecdotes' in adapter:
+            anecdotes_text = adapter['anecdotes']
+            match = re.search(r'\d+', anecdotes_text)
+            adapter['anecdotes'] = int(match.group()) if match else 0
+
+        # field 'studio'
+        if 'studio' in adapter:
+            adapter['studio'] = adapter['studio'].strip()
+            
         return item
 
     def nettoyer_duree(self, duree_list):

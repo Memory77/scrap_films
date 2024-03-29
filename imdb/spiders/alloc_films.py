@@ -4,9 +4,10 @@ from imdb.items import AllocFilmsItem
 class AllocFilmsSpider(scrapy.Spider):
     name = "alloc_films"
     allowed_domains = ["www.allocine.fr"]
-    start_urls = ["https://www.allocine.fr/films/pays-5001/decennie-2020/", #films en france
-                  "https://www.allocine.fr/films/pays-5002/decennie-2020/" #films aux USA
-                  ]
+    start_urls = ["https://www.allocine.fr/films/decennie-2020/"]
+                #   "https://www.allocine.fr/films/pays-5001/decennie-2020/", #films en france
+                #   "https://www.allocine.fr/films/pays-5002/decennie-2020/" #films aux USA
+                  
 
     #fonction doit s'occuper de parcourir la liste des produits sur chaque page et de suivre le lien de chaque produit
     #pour obtenir plus de détails.
@@ -30,7 +31,7 @@ class AllocFilmsSpider(scrapy.Spider):
         current_page = response.meta.get('current_page', 1)
         next_page = current_page + 1
 
-        if next_page <= 160:
+        if next_page <= 950:
             next_page_url = f"https://www.allocine.fr/films/decennie-2020/?page={next_page}"
             yield scrapy.Request(next_page_url, callback=self.parse, meta={'current_page': next_page})
 
@@ -49,12 +50,20 @@ class AllocFilmsSpider(scrapy.Spider):
         film_item['genre'] = genre
         film_item['acteurs'] = acteurs
         film_item['realisateur'] = realisateur
-        film_item['box_office_url'] = response.urljoin(response.css('a[title="Box Office"]::attr(href)').get())
-
+        #film_item['box_office_url'] = response.urljoin(response.css('a[title="Box Office"]::attr(href)').get())
+        film_item['pays'] = response.css('section.ovw-technical .item span.nationality::text').get()
+        film_item['studio'] = response.css('section.ovw-technical .item span.blue-link::text').get()
+        anecdotes = response.xpath("(//div[@class='item'])[8]/span[2]/text()").get()
+        if anecdotes == "Long métrage":
+            film_item['anecdotes'] = response.xpath("(//div[@class='item'])[9]/span[2]/text()").get()
+        else:
+            film_item['anecdotes'] = response.xpath("(//div[@class='item'])[8]/span[2]/text()").get()
+            
         yield film_item
-        
-        if film_item['box_office_url']:
-            yield response.follow(film_item['box_office_url'], callback=self.parse_box_office, meta={'film_item': film_item})
+        #Long métrage
+        box_office_url = response.urljoin(response.css('a[title="Box Office"]::attr(href)').get())
+        if box_office_url:
+            yield response.follow(box_office_url, callback=self.parse_box_office, meta={'film_item': film_item})
 
 
     def parse_box_office(self, response):
